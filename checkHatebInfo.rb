@@ -7,23 +7,23 @@ WIKIPEDIA_HOST = "http://ja.wikipedia.org/wiki"
 
 HATEB_API_ENDPOINT = "http://b.hatena.ne.jp/entry/jsonlite/"
 
-# wiki$B5-;v$NA4%$%s%G%C%/%9$r3JG<$7$?%U%!%$%k(B
-# http://dumps.wikimedia.org/jawiki/$B$h$j<hF@2DG=(B
+# wiki記事の全インデックスを格納したファイル
+# http://dumps.wikimedia.org/jawiki/より取得可能
 ARTICLE_INDEX_FILE_PATH = "./jawiki-20130125-pages-articles-multistream-index.txt.bz2"
 
-# $B=hM}BP>]$H$9$k$O$F$J%V%C%/%^!<%/?t$N:GDcCM(B
+# 処理対象とするはてなブックマーク数の最低値
 MIN_BOOKMARK_COUNT = 10;
 
-# $B7k2L$r=PNO$9$k%Q%9$r;XDj(B
+# 結果を出力するパスを指定
 OUTPUT_FILE_PATH = "./articles_bookmark_info.csv"
 
-# $B$O$F$J%V%C%/%^!<%/>pJs$r<hF@$9$k$?$a$N%(%s%I%]%$%s%H$r<hF@(B
+# はてなブックマーク情報を取得するためのエンドポイントを取得
 def get_endpoint_path(article_title)
     encoded_url = URI.encode(WIKIPEDIA_HOST + '/' + article_title)
     HATEB_API_ENDPOINT + "?url=" + encoded_url
 end
 
-# $B$O$F$J%V%C%/%^!<%/(BAPI$B$rC!$->pJs$r<hF@(B
+# はてなブックマークAPIを叩き情報を取得
 def get_hateb_info(article_title)
     json_data = open( get_endpoint_path(article_title) ).read
 
@@ -38,17 +38,17 @@ def get_hateb_info(article_title)
         return nil
 end
 
-# $B5-;v$,(Bwikipedia$B<+BN$N%,%$%IMQ5-;v$+$I$&$+$rH=CG(B
+# 記事がwikipedia自体のガイド用記事かどうかを判断
 def is_official_guide_article?(article_title)
     article_title == 'Wikipedia'
 end
 
-# $B:w0z>pJs$+$i(Bwikipedia$B$N5-;v%?%$%H%k$r<hF@(B
+# 索引情報からwikipediaの記事タイトルを取得
 def get_article_title(article_index)
     article_index.split(':')[2]
 end
 
-# $B%V%C%/%^!<%/$KIUM?$5$l$?A4$F$N%?%0$r<hF@$9$k(B
+# ブックマークに付与された全てのタグを取得する
 def get_all_tags_from_bookmarks(bookmarks)
     tags = []
     bookmarks.each{|bookmark|
@@ -63,7 +63,7 @@ def get_all_tags_from_bookmarks(bookmarks)
         puts "[ERROR]: #{e.message}"
 end
 
-# $B%G!<%?$r(BCSV$B7A<0$G%U%!%$%k$KEG$-=P$9(B
+# データをCSV形式でファイルに吐き出す
 def output_csv_data(output)
     outputcsv = ""
     output.each{|line|
@@ -80,7 +80,7 @@ def output_csv_data(output)
     end
 end
 
-# $B%a%$%s%m%8%C%/(B
+# メインロジック
 index_no = 0;
 output   = []
 cmd      = 'bzcat ' + ARTICLE_INDEX_FILE_PATH;
@@ -90,29 +90,29 @@ open('|' + cmd){|file|
 
         index_no += 1
 
-        # $B5-;v%?%$%H%k<hF@(B
+        # 記事タイトル取得
         article_title = get_article_title(article_index)
 
-        # Wikipedia$B$N8x<0%,%$%I5-;v$O%9%-%C%W(B
+        # Wikipediaの公式ガイド記事はスキップ
         if is_official_guide_article?(article_title)
             next
         end
 
-        # $B$O$F%V>pJs$r(BAPI$B$+$i<hF@(B
+        # はてブ情報をAPIから取得
         hateb_info = get_hateb_info(article_title)
         if hateb_info == nil
             next
         end
 
-        # $B%V%C%/%^!<%/$,;XDjCML$K~$J$i%9%-%C%W(B
+        # ブックマークが指定値未満ならスキップ
         if hateb_info['count'].to_i < MIN_BOOKMARK_COUNT
             next
         end
 
-        # $B$O$F%V$N%?%0>pJs$r<hF@(B
+        # はてブのタグ情報を取得
         tags = get_all_tags_from_bookmarks(hateb_info['bookmarks'])
 
-        # $B=PNO$9$k%G!<%?$rG[Ns$K5M$a$k(B
+        # 出力するデータを配列に詰める
         article_info_4_output = []
         article_info_4_output << article_title.strip
         article_info_4_output << hateb_info['count']
@@ -121,7 +121,7 @@ open('|' + cmd){|file|
 
         puts "[DATA PUSHED]line_no:#{index_no}: title:#{article_title}\n"
 
-        # 1000$B7oKh$K%G!<%?$r%U%!%$%k=PNO(B
+        # 1000件毎にデータをファイル出力
         if output.length >= 1000
             output_csv_data(output)
             output = []
