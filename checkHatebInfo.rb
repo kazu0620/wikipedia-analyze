@@ -1,4 +1,7 @@
 #!/ruby/bin/ruby
+# wikipediaの全記事に対してはてなブックマークの情報をチェック
+# 設定値以上のブックマーク数があった記事の情報をcsv形式で吐き出す
+# 処理完了まで数日かかるので注意
 
 require 'open-uri'
 require 'json'
